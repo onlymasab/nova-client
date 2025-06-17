@@ -16,19 +16,25 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Cameraswitch
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Videocam
+import androidx.compose.material.icons.filled.VideocamOff
 import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonColors
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil3.compose.rememberAsyncImagePainter
 import coil3.gif.GifDecoder
@@ -61,6 +68,8 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.paandaaa.nova.android.viewmodel.AuthUiState
+import com.paandaaa.nova.android.viewmodel.VoiceViewModel
+
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -69,15 +78,56 @@ fun HomeScreen(
     authViewModel: AuthViewModel,
     onSignOut: () -> Unit
 ) {
-
+    // State variables for UI controls
     val authState by authViewModel.authState
+    var isMuted by remember { mutableStateOf(false) }
+    var isCameraOn by remember { mutableStateOf(true) }
+    var isSpeakerOn by remember { mutableStateOf(true) }
+    var cameraSelector by remember { mutableStateOf(CameraSelector.DEFAULT_FRONT_CAMERA) }
     val context = LocalContext.current
-    val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
 
-    LaunchedEffect(Unit) {
+// Camera Permission
+    val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
+    var showPermissionDialog by remember { mutableStateOf(false) }
+    // 👇 Check permission on launch
+    LaunchedEffect(cameraPermissionState.status) {
         if (!cameraPermissionState.status.isGranted) {
-            cameraPermissionState.launchPermissionRequest()
+            showPermissionDialog = true
         }
+    }
+
+// 👇 UI Dialog to explain camera permission
+    if (showPermissionDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showPermissionDialog = false
+                isMuted = true
+                isCameraOn = false
+            },
+            title = {
+                Text(text = "Camera Permission Needed")
+            },
+            text = {
+                Text("To use camera and microphone, please grant camera permission.")
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showPermissionDialog = false
+                    cameraPermissionState.launchPermissionRequest()
+                }) {
+                    Text(text = "Allow")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showPermissionDialog = false
+                    isMuted = true
+                    isCameraOn = false
+                }) {
+                    Text(text = "Deny")
+                }
+            }
+        )
     }
 
     Box(
@@ -85,49 +135,39 @@ fun HomeScreen(
             .fillMaxSize()
             .background(Color.White)
     ) {
-        GifImage(
-            url = R.drawable.wave_model,
-            modifier = Modifier.fillMaxSize()
-        )
+//        GifImage(
+//            url = R.drawable.wave_model,
+//            modifier = Modifier.fillMaxSize()
+//        )
 
-        Column (
+        VoiceScreen()
 
-        ) {
-
+        Column {
             when (authState) {
                 is AuthUiState.Success -> {
                     val user = (authState as AuthUiState.Success).user
 
                     if (user != null) {
-                        Column (
+                        Column(
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                             modifier = Modifier
                                 .padding(top = 32.dp, start = 24.dp, end = 24.dp)
                                 .fillMaxWidth(),
-
                         ) {
-                            Row (
-                                modifier = Modifier
-                                    .fillMaxWidth(),
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.Start)
                             ) {
-
                                 UserAvatar(
                                     url = user.profilePictureUrl,
                                     modifier = Modifier
-                                        .clip(
-                                            shape = CircleShape
-                                        )
-                                        .background(
-                                            color = Color(0xFFF3F49B),
-                                        )
-                                        .size(
-                                            56.dp
-                                        )
+                                        .clip(shape = CircleShape)
+                                        .background(color = Color(0xFFF3F49B))
+                                        .size(56.dp)
                                 )
 
-                                Column (
+                                Column(
                                     verticalArrangement = Arrangement.spacedBy(2.dp),
                                     horizontalAlignment = Alignment.Start,
                                 ) {
@@ -149,36 +189,52 @@ fun HomeScreen(
                                 }
                             }
 
-                            Row (
+                            Row(
                                 horizontalArrangement = Arrangement.SpaceBetween,
-                                modifier = Modifier
-                                    .fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth()
                             ) {
+                                // Speaker button
                                 OptionIconButton(
-                                    icon = Icons.AutoMirrored.Filled.VolumeUp,
-                                    onClick = {},
-                                    isActive = true
+                                    icon = if ( isSpeakerOn ) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,
+                                    onClick = { isSpeakerOn = !isSpeakerOn },
+                                    isActive = isSpeakerOn
                                 )
 
+                                // Camera on/off button
                                 OptionIconButton(
-                                    icon = Icons.Default.Videocam,
-                                    onClick = {},
-                                    isActive = true
+                                    icon = if ( isCameraOn ) Icons.Default.Videocam else Icons.Default.VideocamOff,
+                                    onClick = { isCameraOn = !isCameraOn },
+                                    isActive = isCameraOn
                                 )
 
+                                // Camera flip button
                                 OptionIconButton(
                                     icon = Icons.Default.Cameraswitch,
-                                    onClick = {},
+                                    onClick = {
+                                        cameraSelector = if (cameraSelector == CameraSelector.DEFAULT_FRONT_CAMERA) {
+                                            CameraSelector.DEFAULT_BACK_CAMERA
+                                        } else {
+                                            CameraSelector.DEFAULT_FRONT_CAMERA
+                                        }
+                                    },
                                     isActive = true
                                 )
+
+                                // Mic mute/unmute button
                                 OptionIconButton(
-                                    icon = Icons.Default.Mic,
-                                    onClick = {},
-                                    isActive = true
+                                    icon = if (isMuted) Icons.Default.Mic else Icons.Default.MicOff,
+                                    onClick = { isMuted = !isMuted },
+                                    isActive = !isMuted,
+                                    text = if (isMuted) "Unmute" else "Mute"
                                 )
+
+                                // Sign out button
                                 OptionIconButton(
                                     icon = Icons.Default.Close,
-                                    onClick = {},
+                                    onClick = {
+                                        authViewModel.signOut()
+                                        onSignOut() // Navigate back to auth screen
+                                    },
                                     isActive = true,
                                     isSignOut = true
                                 )
@@ -198,14 +254,11 @@ fun HomeScreen(
                 AuthUiState.Idle -> {
                     Text("Not signed in.")
                 }
-
                 AuthUiState.Loading -> {}
             }
-
-
         }
 
-        if (cameraPermissionState.status.isGranted) {
+        if (cameraPermissionState.status.isGranted && isCameraOn) {
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
@@ -215,7 +268,25 @@ fun HomeScreen(
                     .border(2.dp, Color.White, RoundedCornerShape(16.dp))
                     .background(Color.Gray, RoundedCornerShape(16.dp))
             ) {
-                CameraPreviewView()
+                CameraPreviewView(cameraSelector = cameraSelector)
+            }
+        } else if (!isCameraOn) {
+            // Show placeholder when camera is off
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(bottom = 24.dp, end = 24.dp)
+                    .size(width = 140.dp, height = 160.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .border(2.dp, Color.White, RoundedCornerShape(16.dp))
+                    .background(Color.DarkGray, RoundedCornerShape(16.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Camera Off",
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
         } else {
             Box(
@@ -231,6 +302,98 @@ fun HomeScreen(
             }
         }
     }
+}
+
+@Composable
+fun OptionIconButton(
+    icon: ImageVector,
+    onClick: () -> Unit,
+    isActive: Boolean = false,
+    isSignOut: Boolean = false,
+    text: String? = null
+) {
+    val containerColor = when {
+        isSignOut -> Color.Red
+        isActive -> Color.White
+        else -> Color.White.copy(alpha = 1f)
+    }
+
+    val contentColor = when {
+        isSignOut -> Color.White
+        isActive -> Color.Black
+        else -> Color.Gray
+    }
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        IconButton(
+            onClick = onClick,
+            colors = IconButtonColors(
+                containerColor = containerColor,
+                contentColor = contentColor,
+                disabledContainerColor = if (isActive) Color.White else Color.Gray,
+                disabledContentColor = if (isActive) Color.White else Color.Gray,
+            ),
+            modifier = Modifier.size(52.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = "Button Icon",
+                modifier = Modifier.size(24.dp)
+            )
+        }
+
+        Text(
+            text = text ?: when (icon) {
+                Icons.Default.Mic -> if (isActive) "Mute" else "Unmute"
+                Icons.Default.Videocam -> if (isActive) "Camera" else "Camera Off"
+                Icons.AutoMirrored.Filled.VolumeUp -> "Speaker"
+                Icons.Default.Cameraswitch -> "Switch"
+                else -> "Sign out"
+            },
+            style = TextStyle(
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Normal,
+                color = if (isActive) Color.Black else Color.Gray
+            ),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+    }
+}
+
+@Composable
+fun CameraPreviewView(cameraSelector: CameraSelector) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    AndroidView(
+        factory = { ctx ->
+            val previewView = PreviewView(ctx)
+            val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
+
+            cameraProviderFuture.addListener({
+                val cameraProvider = cameraProviderFuture.get()
+                val preview = Preview.Builder().build()
+                preview.setSurfaceProvider(previewView.surfaceProvider)
+
+                try {
+                    cameraProvider.unbindAll()
+                    cameraProvider.bindToLifecycle(
+                        lifecycleOwner,
+                        cameraSelector,
+                        preview
+                    )
+                } catch (exc: Exception) {
+                    Log.e("CameraPreviewView", "Camera binding failed", exc)
+                }
+            }, ContextCompat.getMainExecutor(ctx))
+
+            previewView
+        },
+        modifier = Modifier.fillMaxSize()
+    )
 }
 
 @Composable
@@ -250,8 +413,6 @@ fun GifImage(url: Int, modifier: Modifier = Modifier) {
     )
 }
 
-
-
 @Composable
 fun UserAvatar(url: String?, modifier: Modifier = Modifier) {
     AsyncImage(
@@ -268,90 +429,13 @@ fun UserAvatar(url: String?, modifier: Modifier = Modifier) {
 }
 
 
+
 @Composable
-fun OptionIconButton(icon: ImageVector, onClick: () -> Unit , isActive: Boolean = false , isSignOut : Boolean = false) {
-
-    val containerColor = when {
-        isSignOut -> Color.Red
-        isActive -> Color.White
-        else -> Color.Transparent
-    }
-
-    val contentColor = when {
-        isSignOut -> Color.White
-        isActive -> Color.Black
-        else -> Color.Gray
-    }
-    Column (
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        IconButton(
-            onClick = onClick,
-            colors = IconButtonColors(
-                containerColor = containerColor,
-                contentColor = contentColor,
-                disabledContainerColor = if (isActive) Color.White else Color.Gray,
-                disabledContentColor = if (isActive) Color.White else Color.Gray,
-            ),
-            modifier = Modifier.size(52.dp)
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = "Speaker Icon",
-                modifier = Modifier.size(24.dp)
-            )
+fun VoiceScreen(viewModel: VoiceViewModel = hiltViewModel()) {
+    Column {
+        Text(text = viewModel.result)
+        Button(onClick = { viewModel.startListening() }) {
+            Text("🎙️ Say 'Hey Nova'")
         }
-
-        Text (
-            text = when (icon) {
-                Icons.Default.Mic -> "Mute"
-                Icons.Default.Videocam -> "Camera"
-                Icons.AutoMirrored.Filled.VolumeUp -> "Speaker"
-                Icons.Default.Cameraswitch -> "Switch"
-                else -> "Sign out"
-            },
-            style = TextStyle(
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Normal,
-                color =  if (isActive) Color.Black else Color.Gray
-            ),
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 4.dp)
-        )
     }
-}
-
-@Composable
-fun CameraPreviewView() {
-    val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
-
-    AndroidView(
-        factory = { ctx ->
-            val previewView = PreviewView(ctx)
-            val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
-
-            cameraProviderFuture.addListener({
-                val cameraProvider = cameraProviderFuture.get()
-                val preview = Preview.Builder().build()
-                val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
-
-                preview.setSurfaceProvider(previewView.surfaceProvider)
-
-                try {
-                    cameraProvider.unbindAll()
-                    cameraProvider.bindToLifecycle(
-                        lifecycleOwner,
-                        cameraSelector,
-                        preview
-                    )
-                } catch (exc: Exception) {
-                    Log.e("CameraPreviewView", "Camera binding failed", exc)
-                }
-            }, ContextCompat.getMainExecutor(ctx))
-
-            previewView
-        },
-        modifier = Modifier.fillMaxSize()
-    )
 }

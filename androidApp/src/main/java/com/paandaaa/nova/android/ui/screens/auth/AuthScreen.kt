@@ -1,5 +1,6 @@
 package com.paandaaa.nova.android.ui.screens.auth
 
+import android.app.Activity
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -90,7 +91,7 @@ fun AuthScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         SignInButton (
-                            onClick = { authViewModel.signInWithGoogle(BuildConfig.GOOGLE_WEB_CLIENT_ID) },
+                            onClick = { authViewModel.signInWithGoogle(context as Activity, BuildConfig.GOOGLE_WEB_CLIENT_ID) },
                             logo = R.drawable.google_logo,
                             provider = "Continue with Google"
                         )
@@ -120,7 +121,7 @@ fun AuthScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         SignInButton (
-                            onClick = { authViewModel.signInWithGoogle(BuildConfig.GOOGLE_WEB_CLIENT_ID) },
+                            onClick = { authViewModel.signInWithGoogle(context as Activity , BuildConfig.GOOGLE_WEB_CLIENT_ID) },
                             logo = R.drawable.google_logo,
                             provider = "Continue with Google"
                         )

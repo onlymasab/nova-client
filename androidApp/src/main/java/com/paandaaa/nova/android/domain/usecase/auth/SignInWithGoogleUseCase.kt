@@ -1,6 +1,6 @@
 package com.paandaaa.nova.android.domain.usecase.auth
 
-import android.content.Context
+import android.app.Activity
 import android.util.Log
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
@@ -9,7 +9,6 @@ import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
 import com.paandaaa.nova.android.domain.repository.AuthRepository
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.security.MessageDigest
@@ -17,12 +16,11 @@ import java.util.UUID
 import javax.inject.Inject
 
 class SignInWithGoogleUseCase @Inject constructor(
-    @ApplicationContext private val context: Context,
     private val authRepository: AuthRepository // ✅ Injected for token auth
 ) {
-    suspend operator fun invoke(serverClientId: String): Result<Unit> = withContext(Dispatchers.IO) {
+    suspend operator fun invoke(activity: Activity, serverClientId: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            val credentialManager = CredentialManager.create(context)
+            val credentialManager = CredentialManager.create(activity)
 
             // Step 1: Generate raw nonce and hash it
             val rawNonce = UUID.randomUUID().toString()
@@ -35,16 +33,18 @@ class SignInWithGoogleUseCase @Inject constructor(
                 .setNonce(hashedNonce)
                 .build()
 
-            // Step 3: Get credentials
+            // Step 3: Get credentials (using Activity context)
             val request = GetCredentialRequest.Builder()
                 .addCredentialOption(googleIdOption)
                 .build()
 
-            val result = credentialManager.getCredential(context, request)
+            val result = credentialManager.getCredential(activity, request)
             val credential = GoogleIdTokenCredential.createFrom(result.credential.data)
             val idToken = credential.idToken
 
-            // Step 4: Pass token and rawNonce to AuthRepository (e.g., Supabase)
+            Log.d("GoogleSignIn", "Retrieved ID Token: $idToken")
+
+            // Step 4: Pass token and rawNonce to AuthRepository (e.g., Supabase backend auth)
             authRepository.signInWithGoogle(idToken, rawNonce)
 
             Result.success(Unit)

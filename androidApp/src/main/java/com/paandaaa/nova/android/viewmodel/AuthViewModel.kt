@@ -1,5 +1,6 @@
 package com.paandaaa.nova.android.viewmodel
 
+import android.app.Activity
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.credentials.exceptions.GetCredentialException
@@ -20,14 +21,14 @@ class AuthViewModel @Inject constructor(
     private val _authState = mutableStateOf<AuthUiState>(AuthUiState.Idle)
     val authState: State<AuthUiState> = _authState
 
-    fun signInWithGoogle(serverClientId: String) {
+    fun signInWithGoogle(activity: Activity, serverClientId: String) {
         viewModelScope.launch {
             _authState.value = AuthUiState.Loading
-            val result = authUseCases.signInWithGoogle(serverClientId)
+            val result = authUseCases.signInWithGoogle(activity, serverClientId)
             _authState.value = result.fold(
                 onSuccess = {
-                    getCurrentUser() // Trigger next step after sign in
-                    _authState.value // stay loading until getCurrentUser resolves
+                    getCurrentUser()
+                    _authState.value // stays loading until getCurrentUser resolves
                 },
                 onFailure = { exception ->
                     AuthUiState.Error(mapExceptionToMessage(exception))
@@ -35,7 +36,6 @@ class AuthViewModel @Inject constructor(
             )
         }
     }
-
 
     fun checkAuthStatus() {
         viewModelScope.launch {
@@ -91,8 +91,6 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-
-
     private fun mapExceptionToMessage(exception: Throwable): String {
         return when (exception) {
             is GetCredentialException -> "Failed to retrieve Google credentials: ${exception.message}"
@@ -108,4 +106,3 @@ sealed class AuthUiState {
     data class Success(val user: UserModel? = null) : AuthUiState()
     data class Error(val message: String) : AuthUiState()
 }
-

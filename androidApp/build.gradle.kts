@@ -1,3 +1,4 @@
+
 import com.google.firebase.appdistribution.gradle.firebaseAppDistribution
 import java.util.Properties
 plugins {
@@ -27,7 +28,7 @@ android {
         minSdk = 24
         targetSdk = 35
         versionCode = 1
-        versionName = "2.0"
+        versionName = "2.3"
 
         // Add these to defaultConfig so they're available in all build types
         buildConfigField("String", "SUPABASE_URL", "\"${getLocalProperty("SUPABASE_URL")}\"")
@@ -68,6 +69,8 @@ android {
     kotlinOptions {
         jvmTarget = "1.8"
     }
+
+
 }
 
 
@@ -121,4 +124,25 @@ dependencies {
     implementation(libs.coil.gif)
 
     implementation(libs.material.icons.extended)
+
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.kotlinx.serialization)
+
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    implementation(libs.room.rxjava2)
+    implementation(libs.room.rxjava3)
+    implementation(libs.room.guava)
+    implementation(libs.room.paging)
+    ksp(libs.room.compiler)
+    annotationProcessor(libs.room.compiler)
+    testImplementation(libs.room.testing)
+
+    implementation(libs.tensorflow.lite)
+    implementation(libs.tensorflow.lite.support)
+    implementation(libs.tensorflow.lite.audio)
+
+    implementation(libs.porcupine.android)
 }
+
+

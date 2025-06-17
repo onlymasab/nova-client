@@ -12,7 +12,20 @@
           "package_name": "com.paandaaa.nova.android"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "693229431999-p8vu9ck5abc45rhhr5aglbktr7sjljor.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.paandaaa.nova.android",
+            "certificate_hash": "e7661a1092be9b2e1324c71e63269b1ecdf19352"
+          }
+        },
+        {
+          "client_id": "693229431999-c7q45cprbv3773fki4uramllttnfud9n.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyD7UsWJqrQHSFSCTXyUMXzoAP4tkBHchkE"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "693229431999-c7q45cprbv3773fki4uramllttnfud9n.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

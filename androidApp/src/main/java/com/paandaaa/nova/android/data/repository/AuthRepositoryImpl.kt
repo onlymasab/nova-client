@@ -1,21 +1,12 @@
-package com.paandaaa.nova.android.data.remote.repository
+package com.paandaaa.nova.android.data.repository
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import com.paandaaa.nova.android.domain.model.UserModel
 import com.paandaaa.nova.android.domain.repository.AuthRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.annotations.SupabaseExperimental
-import io.github.jan.supabase.auth.SessionManager
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.Google
-import io.github.jan.supabase.auth.providers.OAuthProvider
-import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.providers.builtin.IDToken
-import io.github.jan.supabase.postgrest.from
-import io.github.jan.supabase.postgrest.query.Columns
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 class AuthRepositoryImpl @Inject constructor(
@@ -93,5 +84,3 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 }
-
-

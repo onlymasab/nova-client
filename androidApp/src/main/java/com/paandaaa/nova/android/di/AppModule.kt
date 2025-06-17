@@ -1,10 +1,16 @@
 package com.paandaaa.nova.android.di
 
 import android.content.Context
-import com.paandaaa.nova.android.data.local.repository.OnboardingRepositoryImpl
-import com.paandaaa.nova.android.data.remote.repository.AuthRepositoryImpl
+import androidx.room.Room
+import com.paandaaa.nova.android.data.local.dao.ConversationDao
+import com.paandaaa.nova.android.data.local.database.AppDatabase
+import com.paandaaa.nova.android.data.remote.VoiceApi
+import com.paandaaa.nova.android.data.repository.OnboardingRepositoryImpl
+import com.paandaaa.nova.android.data.repository.AuthRepositoryImpl
+import com.paandaaa.nova.android.data.repository.VoiceRepositoryImpl
 import com.paandaaa.nova.android.domain.repository.AuthRepository
 import com.paandaaa.nova.android.domain.repository.OnboardingRepository
+import com.paandaaa.nova.android.domain.repository.VoiceRepository
 import com.paandaaa.nova.android.domain.usecase.auth.AuthUseCases
 import com.paandaaa.nova.android.domain.usecase.auth.GetCurrentUserUseCase
 import com.paandaaa.nova.android.domain.usecase.auth.GetIdTokenUseCase
@@ -18,6 +24,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import io.github.jan.supabase.SupabaseClient
 import javax.inject.Singleton
+import kotlin.jvm.java
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -48,10 +55,9 @@ object AppModule {
     @Provides
     @Singleton
     fun provideSignInWithGoogleUseCase(
-        authRepository: AuthRepository,
-        @ApplicationContext context: Context
+        authRepository: AuthRepository
     ): SignInWithGoogleUseCase {
-        return SignInWithGoogleUseCase(authRepository = authRepository, context = context)
+        return SignInWithGoogleUseCase(authRepository = authRepository)
     }
 
     @Provides
@@ -78,9 +84,35 @@ object AppModule {
         return GetIdTokenUseCase(authRepository)
     }
 
+    @Provides
+    @Singleton
+    fun provideOnboardingRepository(): OnboardingRepository = OnboardingRepositoryImpl()
 
 
     @Provides
     @Singleton
-    fun provideOnboardingRepository(): OnboardingRepository = OnboardingRepositoryImpl()
+    fun provideDatabase(@ApplicationContext context: Context): AppDatabase {
+        return Room.databaseBuilder(
+            context,
+            AppDatabase::class.java,
+            "nova_db"
+        ).build()
+    }
+
+    @Provides
+    fun provideConversationDao(db: AppDatabase): ConversationDao = db.conversationDao()
+
+    @Provides
+    fun provideVoiceApi(): VoiceApi {
+        return object : VoiceApi {
+            override suspend fun transcribe(): String {
+                return "Hey Nova, how can I help you?" // stub for now
+            }
+        }
+    }
+
+    @Provides
+    fun provideVoiceRepository(api: VoiceApi, dao: ConversationDao): VoiceRepository {
+        return VoiceRepositoryImpl(api, dao)
+    }
 }
