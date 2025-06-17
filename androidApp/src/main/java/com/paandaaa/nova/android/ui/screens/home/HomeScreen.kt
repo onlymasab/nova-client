@@ -135,10 +135,10 @@ fun HomeScreen(
             .fillMaxSize()
             .background(Color.White)
     ) {
-//        GifImage(
-//            url = R.drawable.wave_model,
-//            modifier = Modifier.fillMaxSize()
-//        )
+        GifImage(
+            url = R.drawable.wave_model,
+            modifier = Modifier.fillMaxSize()
+        )
 
         VoiceScreen()
 
@@ -432,10 +432,15 @@ fun UserAvatar(url: String?, modifier: Modifier = Modifier) {
 
 @Composable
 fun VoiceScreen(viewModel: VoiceViewModel = hiltViewModel()) {
-    Column {
-        Text(text = viewModel.result)
+    val result by viewModel.result.collectAsState()
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.fillMaxWidth().padding(16.dp)
+    ) {
+        Text(text = result)
         Button(onClick = { viewModel.startListening() }) {
-            Text("🎙️ Say 'Hey Nova'")
+            Text("🎤 Speak Now")
         }
     }
 }

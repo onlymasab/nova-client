@@ -138,8 +138,6 @@ dependencies {
     annotationProcessor(libs.room.compiler)
     testImplementation(libs.room.testing)
 
-    implementation(libs.tensorflow.lite)
-    implementation(libs.tensorflow.lite.support)
     implementation(libs.tensorflow.lite.audio)
 
     implementation(libs.porcupine.android)

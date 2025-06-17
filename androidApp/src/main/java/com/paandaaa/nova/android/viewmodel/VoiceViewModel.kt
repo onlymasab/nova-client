@@ -1,30 +1,28 @@
 package com.paandaaa.nova.android.viewmodel
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.paandaaa.nova.android.domain.repository.VoiceRepository
-import com.paandaaa.nova.android.domain.usecase.voice.TranscribeVoiceUseCase
+import com.paandaaa.nova.android.domain.usecase.VoiceUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-
 @HiltViewModel
 class VoiceViewModel @Inject constructor(
-    private val transcribeUseCase: TranscribeVoiceUseCase
+    private val useCase: VoiceUseCase
 ) : ViewModel() {
 
-    var result by mutableStateOf("")
-        private set
+    private val _result = MutableStateFlow("Say 'Hey Nova' to start")
+    val result: StateFlow<String> = _result
 
     fun startListening() {
         viewModelScope.launch {
-            result = "Listening..."
-            val transcription = transcribeUseCase()
-            result = transcription.text
+            useCase.listen().collectLatest { speech ->
+                _result.value = speech
+            }
         }
     }
 }

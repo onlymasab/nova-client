@@ -101,8 +101,6 @@ room-guava = { module = "androidx.room:room-guava", version.ref = "room" }
 room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
 room-paging = { module = "androidx.room:room-paging", version.ref = "room" }
 
-tensorflow-lite = { module = "org.tensorflow:tensorflow-lite", version.ref = "tensorflow-lite" }
-tensorflow-lite-support = { module = "org.tensorflow:tensorflow-lite-support", version.ref = "tensorflow-lite-support"}
 tensorflow-lite-audio = { module = "org.tensorflow:tensorflow-lite-task-audio", version.ref = "tensorflow-lite-audio"}
 
 porcupine-android = { group = "ai.picovoice", name = "porcupine-android", version.ref = "porcupine" }

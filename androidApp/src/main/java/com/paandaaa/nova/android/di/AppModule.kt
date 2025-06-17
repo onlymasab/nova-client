@@ -23,6 +23,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import io.github.jan.supabase.SupabaseClient
+import java.nio.channels.FileChannel
 import javax.inject.Singleton
 import kotlin.jvm.java
 
@@ -112,7 +113,10 @@ object AppModule {
     }
 
     @Provides
-    fun provideVoiceRepository(api: VoiceApi, dao: ConversationDao): VoiceRepository {
-        return VoiceRepositoryImpl(api, dao)
+    fun provideContext(@ApplicationContext context: Context): Context = context
+
+    @Provides
+    fun provideVoiceRepository(context: Context): VoiceRepository {
+        return VoiceRepositoryImpl(context)
     }
 }
