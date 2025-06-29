@@ -2,15 +2,10 @@ package com.paandaaa.nova.android.di
 
 import android.content.Context
 import androidx.room.Room
-import com.paandaaa.nova.android.data.local.dao.ConversationDao
-import com.paandaaa.nova.android.data.local.database.AppDatabase
-import com.paandaaa.nova.android.data.remote.VoiceApi
 import com.paandaaa.nova.android.data.repository.OnboardingRepositoryImpl
 import com.paandaaa.nova.android.data.repository.AuthRepositoryImpl
-import com.paandaaa.nova.android.data.repository.VoiceRepositoryImpl
 import com.paandaaa.nova.android.domain.repository.AuthRepository
 import com.paandaaa.nova.android.domain.repository.OnboardingRepository
-import com.paandaaa.nova.android.domain.repository.VoiceRepository
 import com.paandaaa.nova.android.domain.usecase.auth.AuthUseCases
 import com.paandaaa.nova.android.domain.usecase.auth.GetCurrentUserUseCase
 import com.paandaaa.nova.android.domain.usecase.auth.GetIdTokenUseCase
@@ -90,33 +85,10 @@ object AppModule {
     fun provideOnboardingRepository(): OnboardingRepository = OnboardingRepositoryImpl()
 
 
-    @Provides
-    @Singleton
-    fun provideDatabase(@ApplicationContext context: Context): AppDatabase {
-        return Room.databaseBuilder(
-            context,
-            AppDatabase::class.java,
-            "nova_db"
-        ).build()
-    }
 
-    @Provides
-    fun provideConversationDao(db: AppDatabase): ConversationDao = db.conversationDao()
 
-    @Provides
-    fun provideVoiceApi(): VoiceApi {
-        return object : VoiceApi {
-            override suspend fun transcribe(): String {
-                return "Hey Nova, how can I help you?" // stub for now
-            }
-        }
-    }
 
     @Provides
     fun provideContext(@ApplicationContext context: Context): Context = context
 
-    @Provides
-    fun provideVoiceRepository(context: Context): VoiceRepository {
-        return VoiceRepositoryImpl(context)
-    }
 }

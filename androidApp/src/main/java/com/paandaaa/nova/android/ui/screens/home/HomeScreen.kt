@@ -2,6 +2,7 @@ package com.paandaaa.nova.android.ui.screens.home
 
 import android.Manifest
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
@@ -22,10 +23,9 @@ import androidx.compose.material.icons.filled.Cameraswitch
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.VideocamOff
-import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -53,6 +53,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.media3.common.util.UnstableApi
 import coil3.compose.rememberAsyncImagePainter
 import coil3.gif.GifDecoder
 import coil3.request.ImageRequest
@@ -60,183 +61,152 @@ import com.paandaaa.nova.android.R
 import com.paandaaa.nova.android.viewmodel.AuthViewModel
 import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
-import coil3.request.crossfade
-import coil3.request.transformations
-import coil3.size.Scale
-import coil3.transform.CircleCropTransformation
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
+import com.paandaaa.nova.android.ui.componenets.AIListeningAnimation
+import com.paandaaa.nova.android.ui.componenets.AudioWaveformAnimation
+import com.paandaaa.nova.android.ui.componenets.UserProfile
 import com.paandaaa.nova.android.viewmodel.AuthUiState
+import com.paandaaa.nova.android.viewmodel.VoiceState
 import com.paandaaa.nova.android.viewmodel.VoiceViewModel
+import com.paandaaa.nova.android.ui.componenets.VideoBackgroundPlayer
+import com.paandaaa.nova.android.ui.componenets.OptionIconButton
+import com.paandaaa.nova.android.ui.componenets.RecordingMicAnimation
+import com.paandaaa.nova.android.ui.componenets.VoiceDotsAnimation
 
-
+@androidx.annotation.OptIn(UnstableApi::class)
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun HomeScreen(
+    voiceViewModel: VoiceViewModel,
     navController: NavHostController,
     authViewModel: AuthViewModel,
     onSignOut: () -> Unit
 ) {
-    // State variables for UI controls
+    val voiceState by voiceViewModel.state.collectAsState()
     val authState by authViewModel.authState
     var isMuted by remember { mutableStateOf(false) }
-    var isCameraOn by remember { mutableStateOf(true) }
     var isSpeakerOn by remember { mutableStateOf(true) }
-    var cameraSelector by remember { mutableStateOf(CameraSelector.DEFAULT_FRONT_CAMERA) }
-    val context = LocalContext.current
+   val context = LocalContext.current
 
-// Camera Permission
-    val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
+    val micPermissionState = rememberPermissionState(Manifest.permission.RECORD_AUDIO)
     var showPermissionDialog by remember { mutableStateOf(false) }
-    // 👇 Check permission on launch
-    LaunchedEffect(cameraPermissionState.status) {
-        if (!cameraPermissionState.status.isGranted) {
-            showPermissionDialog = true
-        }
-    }
 
-// 👇 UI Dialog to explain camera permission
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted ->
+            if (isGranted) {
+                voiceViewModel.startListening()
+            } else {
+                Toast.makeText(context, "Mic permission required", Toast.LENGTH_SHORT).show()
+            }
+        }
+    )
+
     if (showPermissionDialog) {
         AlertDialog(
             onDismissRequest = {
                 showPermissionDialog = false
                 isMuted = true
-                isCameraOn = false
             },
-            title = {
-                Text(text = "Camera Permission Needed")
-            },
-            text = {
-                Text("To use camera and microphone, please grant camera permission.")
-            },
+            title = { Text(text = "Permissions Needed") },
+            text = { Text("To use  microphone features, please grant both permissions.") },
             confirmButton = {
                 TextButton(onClick = {
                     showPermissionDialog = false
-                    cameraPermissionState.launchPermissionRequest()
-                }) {
-                    Text(text = "Allow")
-                }
+                    micPermissionState.launchPermissionRequest()
+                }) { Text(text = "Allow") }
             },
             dismissButton = {
                 TextButton(onClick = {
                     showPermissionDialog = false
                     isMuted = true
-                    isCameraOn = false
-                }) {
-                    Text(text = "Deny")
-                }
+                }) { Text(text = "Deny") }
             }
         )
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-    ) {
-        GifImage(
-            url = R.drawable.wave_model,
-            modifier = Modifier.fillMaxSize()
-        )
 
-        VoiceScreen()
+
+    Box(
+        modifier = Modifier.fillMaxSize().background(Color.White)
+    ) {
+
+        VideoBackgroundPlayer(rawResId = R.raw.model)
+
+        Column (
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            when (voiceState) {
+                is VoiceState.Idle -> Text("Tap to speak")
+                is VoiceState.Listening -> Text("Listening...")
+                is VoiceState.Result -> Text("Processing your speech...")
+                is VoiceState.ProcessingResponse -> Text("Nova is thinking...")
+                is VoiceState.Speaking -> Text("Nova is speaking...")
+                is VoiceState.Error -> Text("Error: ${(voiceState as VoiceState.Error).message}")
+            }
+
+            Button(
+                modifier = Modifier
+                    .padding(16.dp),
+                onClick = {
+                    permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                    //voiceViewModel.startListening() // Call the ViewModel function to start speech recognition
+                }
+            ) {
+                Text("Start Nova")
+            }
+
+        }
+
+
 
         Column {
-            when (authState) {
+            when (val state = authState) {
                 is AuthUiState.Success -> {
-                    val user = (authState as AuthUiState.Success).user
-
+                    val user = state.user
                     if (user != null) {
                         Column(
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalArrangement = Arrangement.SpaceBetween,
                             modifier = Modifier
-                                .padding(top = 32.dp, start = 24.dp, end = 24.dp)
-                                .fillMaxWidth(),
+                                .padding(vertical = 48.dp, horizontal = 24.dp)
+                                .fillMaxSize(),
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.Start)
-                            ) {
-                                UserAvatar(
-                                    url = user.profilePictureUrl,
-                                    modifier = Modifier
-                                        .clip(shape = CircleShape)
-                                        .background(color = Color(0xFFF3F49B))
-                                        .size(56.dp)
-                                )
-
-                                Column(
-                                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                                    horizontalAlignment = Alignment.Start,
-                                ) {
-                                    Text(
-                                        text = user.name,
-                                        style = TextStyle(
-                                            fontSize = 18.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    )
-                                    Text(
-                                        text = user.email,
-                                        style = TextStyle(
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Normal,
-                                            color = Color.Gray
-                                        )
-                                    )
-                                }
-                            }
+                            UserProfile(name = user.name , email = user.email, profilePictureUrl = user.profilePictureUrl)
 
                             Row(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                // Speaker button
+
+
                                 OptionIconButton(
-                                    icon = if ( isSpeakerOn ) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,
+                                    icon = if (isSpeakerOn) Icons.Default.PlayArrow else Icons.AutoMirrored.Filled.VolumeOff,
                                     onClick = { isSpeakerOn = !isSpeakerOn },
-                                    isActive = isSpeakerOn
+                                    isActive = isSpeakerOn,
                                 )
 
-                                // Camera on/off button
                                 OptionIconButton(
-                                    icon = if ( isCameraOn ) Icons.Default.Videocam else Icons.Default.VideocamOff,
-                                    onClick = { isCameraOn = !isCameraOn },
-                                    isActive = isCameraOn
+                                    icon = if (isSpeakerOn) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,
+                                    onClick = { isSpeakerOn = !isSpeakerOn },
+                                    isActive = isSpeakerOn,
                                 )
-
-                                // Camera flip button
-                                OptionIconButton(
-                                    icon = Icons.Default.Cameraswitch,
-                                    onClick = {
-                                        cameraSelector = if (cameraSelector == CameraSelector.DEFAULT_FRONT_CAMERA) {
-                                            CameraSelector.DEFAULT_BACK_CAMERA
-                                        } else {
-                                            CameraSelector.DEFAULT_FRONT_CAMERA
-                                        }
-                                    },
-                                    isActive = true
-                                )
-
-                                // Mic mute/unmute button
                                 OptionIconButton(
                                     icon = if (isMuted) Icons.Default.Mic else Icons.Default.MicOff,
                                     onClick = { isMuted = !isMuted },
                                     isActive = !isMuted,
-                                    text = if (isMuted) "Unmute" else "Mute"
                                 )
-
-                                // Sign out button
                                 OptionIconButton(
                                     icon = Icons.Default.Close,
                                     onClick = {
                                         authViewModel.signOut()
-                                        onSignOut() // Navigate back to auth screen
+                                        onSignOut()
                                     },
                                     isActive = true,
-                                    isSignOut = true
+                                    isSignOut = true,
                                 )
                             }
                         }
@@ -244,203 +214,19 @@ fun HomeScreen(
                         Text("No user data found.")
                     }
                 }
-                is AuthUiState.Loading -> {
-                    CircularProgressIndicator()
-                }
-                is AuthUiState.Error -> {
-                    val message = (authState as AuthUiState.Error).message
-                    Text("Error: $message")
-                }
-                AuthUiState.Idle -> {
-                    Text("Not signed in.")
-                }
-                AuthUiState.Loading -> {}
+                is AuthUiState.Loading -> CircularProgressIndicator()
+                is AuthUiState.Error -> Text("Error: ${state.message}")
+                AuthUiState.Idle -> Text("Not signed in.")
             }
         }
 
-        if (cameraPermissionState.status.isGranted && isCameraOn) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(bottom = 24.dp, end = 24.dp)
-                    .size(width = 140.dp, height = 160.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .border(2.dp, Color.White, RoundedCornerShape(16.dp))
-                    .background(Color.Gray, RoundedCornerShape(16.dp))
-            ) {
-                CameraPreviewView(cameraSelector = cameraSelector)
-            }
-        } else if (!isCameraOn) {
-            // Show placeholder when camera is off
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(bottom = 24.dp, end = 24.dp)
-                    .size(width = 140.dp, height = 160.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .border(2.dp, Color.White, RoundedCornerShape(16.dp))
-                    .background(Color.DarkGray, RoundedCornerShape(16.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Camera Off",
-                    color = Color.White,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-        } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.7f)),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(48.dp),
-                    color = Color.White
-                )
-            }
-        }
     }
 }
 
-@Composable
-fun OptionIconButton(
-    icon: ImageVector,
-    onClick: () -> Unit,
-    isActive: Boolean = false,
-    isSignOut: Boolean = false,
-    text: String? = null
-) {
-    val containerColor = when {
-        isSignOut -> Color.Red
-        isActive -> Color.White
-        else -> Color.White.copy(alpha = 1f)
-    }
-
-    val contentColor = when {
-        isSignOut -> Color.White
-        isActive -> Color.Black
-        else -> Color.Gray
-    }
-
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        IconButton(
-            onClick = onClick,
-            colors = IconButtonColors(
-                containerColor = containerColor,
-                contentColor = contentColor,
-                disabledContainerColor = if (isActive) Color.White else Color.Gray,
-                disabledContentColor = if (isActive) Color.White else Color.Gray,
-            ),
-            modifier = Modifier.size(52.dp)
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = "Button Icon",
-                modifier = Modifier.size(24.dp)
-            )
-        }
-
-        Text(
-            text = text ?: when (icon) {
-                Icons.Default.Mic -> if (isActive) "Mute" else "Unmute"
-                Icons.Default.Videocam -> if (isActive) "Camera" else "Camera Off"
-                Icons.AutoMirrored.Filled.VolumeUp -> "Speaker"
-                Icons.Default.Cameraswitch -> "Switch"
-                else -> "Sign out"
-            },
-            style = TextStyle(
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Normal,
-                color = if (isActive) Color.Black else Color.Gray
-            ),
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 4.dp)
-        )
-    }
-}
-
-@Composable
-fun CameraPreviewView(cameraSelector: CameraSelector) {
-    val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
-
-    AndroidView(
-        factory = { ctx ->
-            val previewView = PreviewView(ctx)
-            val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
-
-            cameraProviderFuture.addListener({
-                val cameraProvider = cameraProviderFuture.get()
-                val preview = Preview.Builder().build()
-                preview.setSurfaceProvider(previewView.surfaceProvider)
-
-                try {
-                    cameraProvider.unbindAll()
-                    cameraProvider.bindToLifecycle(
-                        lifecycleOwner,
-                        cameraSelector,
-                        preview
-                    )
-                } catch (exc: Exception) {
-                    Log.e("CameraPreviewView", "Camera binding failed", exc)
-                }
-            }, ContextCompat.getMainExecutor(ctx))
-
-            previewView
-        },
-        modifier = Modifier.fillMaxSize()
-    )
-}
-
-@Composable
-fun GifImage(url: Int, modifier: Modifier = Modifier) {
-    val painter = rememberAsyncImagePainter(
-        ImageRequest.Builder(LocalContext.current)
-            .data(url)
-            .decoderFactory(GifDecoder.Factory())
-            .build()
-    )
-
-    Image(
-        painter = painter,
-        contentDescription = null,
-        modifier = modifier,
-        contentScale = ContentScale.Crop
-    )
-}
-
-@Composable
-fun UserAvatar(url: String?, modifier: Modifier = Modifier) {
-    AsyncImage(
-        model = url,
-        contentDescription = "User Profile Picture",
-        modifier = modifier
-            .size(100.dp)
-            .clip(CircleShape)
-            .border(2.dp, Color(0xFFF3F49B), CircleShape),
-        placeholder = painterResource(R.drawable.user_avatar),  // fallback image
-        error = painterResource(R.drawable.user_avatar),        // fallback if failed
-        contentScale = ContentScale.Crop
-    )
-}
 
 
 
-@Composable
-fun VoiceScreen(viewModel: VoiceViewModel = hiltViewModel()) {
-    val result by viewModel.result.collectAsState()
 
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.fillMaxWidth().padding(16.dp)
-    ) {
-        Text(text = result)
-        Button(onClick = { viewModel.startListening() }) {
-            Text("🎤 Speak Now")
-        }
-    }
-}
+
+
+

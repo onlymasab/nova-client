@@ -12,11 +12,13 @@ import com.paandaaa.nova.android.ui.screens.splash.SplashScreen
 import com.paandaaa.nova.android.viewmodel.AuthUiState
 import com.paandaaa.nova.android.viewmodel.AuthViewModel
 import androidx.compose.runtime.getValue
+import com.paandaaa.nova.android.viewmodel.VoiceViewModel
 
 @Composable
 fun AppNavGraph(
     navController: NavHostController,
-    authViewModel: AuthViewModel
+    authViewModel: AuthViewModel,
+    voiceViewModel: VoiceViewModel
 ) {
 
 
@@ -46,6 +48,7 @@ fun AppNavGraph(
             HomeScreen(
                 navController = navController,
                 authViewModel = authViewModel,
+                voiceViewModel = voiceViewModel,
                 onSignOut = {
                     navController.navigate(Screen.Auth.route) {
                         popUpTo(Screen.Home.route) { inclusive = true }

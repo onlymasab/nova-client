@@ -1,5 +1,6 @@
 
 import com.google.firebase.appdistribution.gradle.firebaseAppDistribution
+import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree.Companion.main
 import java.util.Properties
 plugins {
     alias(libs.plugins.androidApplication)
@@ -27,13 +28,15 @@ android {
         applicationId = "com.paandaaa.nova.android"
         minSdk = 24
         targetSdk = 35
-        versionCode = 1
-        versionName = "2.3"
+        versionCode = 2
+        versionName = "2.6"
 
         // Add these to defaultConfig so they're available in all build types
         buildConfigField("String", "SUPABASE_URL", "\"${getLocalProperty("SUPABASE_URL")}\"")
         buildConfigField("String", "SUPABASE_KEY", "\"${getLocalProperty("SUPABASE_KEY")}\"")
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${getLocalProperty("GOOGLE_WEB_CLIENT_ID")}\"")
+        buildConfigField("String", "PORCUPINE_ACCESS_KEY", "\"${getLocalProperty("PORCUPINE_ACCESS_KEY")}\"")
+        buildConfigField("String", "GEMINI_API_KEY", "\"${getLocalProperty("GEMINI_API_KEY")}\"")
     }
     buildFeatures {
         compose = true
@@ -42,6 +45,20 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+        // IMPORTANT: Add this jniLibs block to include native libraries
+        jniLibs {
+            // These are for libc++_shared.so, often needed by native libraries like Vosk
+            pickFirsts += "lib/x86/libc++_shared.so"
+            pickFirsts += "lib/x86_64/libc++_shared.so"
+            pickFirsts += "lib/armeabi-v7a/libc++_shared.so"
+            pickFirsts += "lib/arm64-v8a/libc++_shared.so"
+
+            // These are specifically for libjnidispatch.so, which is required by JNA (used by Vosk)
+            pickFirsts += "lib/x86/libjnidispatch.so"
+            pickFirsts += "lib/x86_64/libjnidispatch.so"
+            pickFirsts += "lib/armeabi-v7a/libjnidispatch.so"
+            pickFirsts += "lib/arm64-v8a/libjnidispatch.so"
         }
     }
     buildTypes {
@@ -61,6 +78,7 @@ android {
                 releaseNotes = "Release notes for the latest version"
             }
         }
+
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
@@ -69,11 +87,7 @@ android {
     kotlinOptions {
         jvmTarget = "1.8"
     }
-
-
 }
-
-
 
 dependencies {
     implementation(projects.shared)
@@ -135,12 +149,19 @@ dependencies {
     implementation(libs.room.guava)
     implementation(libs.room.paging)
     ksp(libs.room.compiler)
-    annotationProcessor(libs.room.compiler)
+    // Removed duplicate annotationProcessor here, ksp is sufficient if not using KAPT for other things
     testImplementation(libs.room.testing)
 
     implementation(libs.tensorflow.lite.audio)
 
     implementation(libs.porcupine.android)
+
+    implementation(libs.vosk.android)
+
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.ui)
+
+    implementation(libs.okhttp.logging)
 }
 
 
