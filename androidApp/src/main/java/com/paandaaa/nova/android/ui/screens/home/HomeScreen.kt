@@ -28,6 +28,8 @@ import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.VideocamOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -134,33 +136,33 @@ fun HomeScreen(
     ) {
 
         VideoBackgroundPlayer(rawResId = R.raw.model)
-
-        Column (
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            when (voiceState) {
-                is VoiceState.Idle -> Text("Tap to speak")
-                is VoiceState.Listening -> Text("Listening...")
-                is VoiceState.Result -> Text("Processing your speech...")
-                is VoiceState.ProcessingResponse -> Text("Nova is thinking...")
-                is VoiceState.Speaking -> Text("Nova is speaking...")
-                is VoiceState.Error -> Text("Error: ${(voiceState as VoiceState.Error).message}")
-            }
-
-            Button(
-                modifier = Modifier
-                    .padding(16.dp),
-                onClick = {
-                    permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                    //voiceViewModel.startListening() // Call the ViewModel function to start speech recognition
-                }
-            ) {
-                Text("Start Nova")
-            }
-
-        }
+//
+//        Column (
+//            modifier = Modifier.fillMaxSize(),
+//            verticalArrangement = Arrangement.Center,
+//            horizontalAlignment = Alignment.CenterHorizontally
+//        ) {
+//            when (voiceState) {
+//                is VoiceState.Idle -> Text("Tap to speak")
+//                is VoiceState.Listening -> Text("Listening...")
+//                is VoiceState.Result -> Text("Processing your speech...")
+//                is VoiceState.ProcessingResponse -> Text("Nova is thinking...")
+//                is VoiceState.Speaking -> Text("Nova is speaking...")
+//                is VoiceState.Error -> Text("Error: ${(voiceState as VoiceState.Error).message}")
+//            }
+//
+//            Button(
+//                modifier = Modifier
+//                    .padding(16.dp),
+//                onClick = {
+//                    permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+//                    //voiceViewModel.startListening() // Call the ViewModel function to start speech recognition
+//                }
+//            ) {
+//                Text("Start Nova")
+//            }
+//
+//        }
 
 
 
@@ -183,11 +185,44 @@ fun HomeScreen(
                             ) {
 
 
-                                OptionIconButton(
-                                    icon = if (isSpeakerOn) Icons.Default.PlayArrow else Icons.AutoMirrored.Filled.VolumeOff,
-                                    onClick = { isSpeakerOn = !isSpeakerOn },
-                                    isActive = isSpeakerOn,
-                                )
+                                var isLoading by remember { mutableStateOf(false) }
+
+                                // Update loading state based on voice state
+                                LaunchedEffect(voiceState) {
+                                    isLoading = voiceState is VoiceState.ProcessingResponse || voiceState is VoiceState.Result
+                                }
+
+                                Button(
+                                    onClick = {
+                                        permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                        voiceViewModel.startListening()
+                                    },
+                                    shape = CircleShape,
+                                    colors = ButtonColors(
+                                        containerColor = Color.White,
+                                        contentColor = Color.Black,
+                                        disabledContainerColor = Color.Gray,
+                                        disabledContentColor = Color.Gray
+                                    ),
+                                    modifier = Modifier
+                                        .size(52.dp)
+                                        .clip(CircleShape),
+                                    contentPadding = PaddingValues(0.dp)
+                                ) {
+                                    if (isLoading) {
+                                        CircularProgressIndicator(
+                                            color = Color.Black,
+                                            strokeWidth = 2.dp,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    } else {
+                                        Icon(
+                                            imageVector = Icons.Default.PlayArrow,
+                                            contentDescription = "Start Nova",
+                                            modifier = Modifier.size(32.dp)
+                                        )
+                                    }
+                                }
 
                                 OptionIconButton(
                                     icon = if (isSpeakerOn) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,

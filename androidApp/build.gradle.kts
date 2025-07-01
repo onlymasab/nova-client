@@ -29,7 +29,7 @@ android {
         minSdk = 24
         targetSdk = 35
         versionCode = 2
-        versionName = "2.6"
+        versionName = "2.7"
 
         // Add these to defaultConfig so they're available in all build types
         buildConfigField("String", "SUPABASE_URL", "\"${getLocalProperty("SUPABASE_URL")}\"")
